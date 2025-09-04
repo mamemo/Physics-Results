@@ -1,0 +1,6 @@
+{
+	"prompts": [
+		{ "id": "p1", "title": "Imagen prompt #1" },
+		{ "id": "p2", "title": "Imagen prompt #2" }
+	]
+}

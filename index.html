@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Prompt Video Matrix</title>
+		<style>
+			:root {
+				--bg: #0b0e13;
+				--card: #121722;
+				--muted: #9aa4b2;
+				--text: #e9eef5;
+				--accent: #7bc4ff;
+				--grid: #1b2230;
+				--btn: #1a73e8;
+				--btnText: #fff;
+			}
+			[data-theme="light"] {
+				--bg: #f6f7fb;
+				--card: #ffffff;
+				--muted: #64748b;
+				--text: #0f172a;
+				--accent: #0ea5e9;
+				--grid: #e5e7eb;
+				--btn: #0ea5e9;
+				--btnText: #fff;
+			}
+			* {
+				box-sizing: border-box;
+			}
+			body {
+				margin: 0;
+				font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
+					Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif;
+				background: var(--bg);
+				color: var(--text);
+			}
+			header {
+				position: sticky;
+				top: 0;
+				z-index: 20;
+				backdrop-filter: saturate(140%) blur(8px);
+				background: color-mix(in oklab, var(--bg) 80%, transparent);
+				border-bottom: 1px solid var(--grid);
+			}
+			.wrap {
+				max-width: 1200px;
+				margin: 0 auto;
+				padding: 16px 20px;
+			}
+			h1 {
+				margin: 0;
+				font-size: 20px;
+				font-weight: 700;
+				letter-spacing: 0.2px;
+			}
+			.sub {
+				color: var(--muted);
+				font-size: 13px;
+				margin-top: 6px;
+			}
+			.control-bar {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px;
+				align-items: center;
+				margin-top: 12px;
+			}
+			button,
+			.chip {
+				appearance: none;
+				border: none;
+				background: var(--btn);
+				color: var(--btnText);
+				padding: 8px 12px;
+				border-radius: 12px;
+				font-weight: 600;
+				cursor: pointer;
+				box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+				transition: 0.2s transform;
+			}
+			button:hover {
+				transform: translateY(-1px);
+			}
+			.chip {
+				background: transparent;
+				color: var(--muted);
+				border: 1px solid var(--grid);
+				box-shadow: none;
+			}
+			.grid {
+				overflow: auto;
+				padding: 20px;
+			}
+			table {
+				width: max(800px, 100%);
+				border-collapse: separate;
+				border-spacing: 0;
+			}
+			thead th {
+				position: sticky;
+				top: 0;
+				background: var(--card);
+				z-index: 10;
+				border-bottom: 1px solid var(--grid);
+				font-size: 12px;
+				text-transform: uppercase;
+				letter-spacing: 0.06em;
+				color: var(--muted);
+				padding: 10px;
+			}
+			thead th:first-child {
+				left: 0;
+				position: sticky;
+				z-index: 11;
+				text-align: left;
+				background: var(--card);
+			}
+			tbody th {
+				position: sticky;
+				left: 0;
+				background: var(--card);
+				border-right: 1px solid var(--grid);
+				text-align: left;
+				padding: 10px;
+				font-size: 14px;
+			}
+			td {
+				padding: 10px;
+				border-bottom: 1px solid var(--grid);
+				background: var(--card);
+			}
+			.cell {
+				display: flex;
+				flex-direction: column;
+				gap: 8px;
+			}
+			video {
+				width: 260px;
+				max-width: 26vw;
+				height: 150px;
+				background: #000;
+				border-radius: 12px;
+				border: 1px solid var(--grid);
+				display: block;
+			}
+			.row-controls {
+				display: flex;
+				gap: 8px;
+			}
+			.tag {
+				font-size: 12px;
+				color: var(--muted);
+			}
+			.note {
+				color: var(--muted);
+				font-size: 12px;
+				margin-top: 12px;
+			}
+			.footer {
+				color: var(--muted);
+				font-size: 12px;
+				text-align: center;
+				padding: 18px;
+			}
+			@media (max-width: 900px) {
+				video {
+					width: 220px;
+					height: 124px;
+				}
+			}
+			@media (max-width: 700px) {
+				video {
+					width: 180px;
+					height: 102px;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<header>
+			<div class="wrap">
+				<h1>Prompt Video Matrix</h1>
+				<div class="sub">
+					Each folder under <code>assets/</code> is a prompt. Put
+					<code>prompt.txt</code> and the 5 videos inside. Play videos
+					independently or <strong>sync‑play</strong> a row.
+				</div>
+				<div class="control-bar">
+					<button id="muteAll">Mute all</button>
+					<button id="pauseAll">Pause all</button>
+					<button id="resetAll">Reset all</button>
+					<span class="chip"
+						>Theme:
+						<button
+							id="toggleTheme"
+							class="chip"
+							style="margin-left: 6px"
+						>
+							Toggle
+						</button></span
+					>
+				</div>
+			</div>
+		</header>
+
+		<main class="wrap grid">
+			<table id="matrix">
+				<thead>
+					<tr id="headRow"></tr>
+				</thead>
+				<tbody id="body"></tbody>
+			</table>
+			<p class="note">
+				Folder layout per prompt (example <code>assets/p1/</code>):
+				<code>prompt.txt</code>, <code>cogvideox.mp4</code>,
+				<code>motion.mp4</code>, <code>collisions.mp4</code>,
+				<code>motion_desc.mp4</code>, <code>collisions_desc.mp4</code>.
+				List your prompt folders in <code>assets/manifest.json</code>.
+			</p>
+		</main>
+
+		<div class="footer">
+			Built for GitHub Pages. Uses <code>assets/manifest.json</code> + one
+			<code>prompt.txt</code> per folder.
+		</div>
+
+		<script>
+			// ======= CONFIG VIA MANIFEST =======
+			// Columns (fixed filenames per column)
+			const COLUMNS = [
+				{ key: "cogvideox", label: "CogVideoX" },
+				{ key: "motion", label: "Motion‑only" },
+				{ key: "collisions", label: "Collisions" },
+				{ key: "motion_desc", label: "Motion‑only (descriptive)" },
+				{
+					key: "collisions_desc",
+					label: "Collisions (descriptive)",
+				},
+			];
+			// The page loads assets/manifest.json with this minimal shape:
+			// {
+			//   "prompts": [
+			//     {"id":"p1", "title":"Imagen prompt #1"},
+			//     {"id":"p2", "title":"Imagen prompt #2"}
+			//   ]
+			// }
+			// Each folder assets/<id>/ must contain prompt.txt and the .mp4s named by COLUMNS' keys.
+			// ===================================
+
+			const headRow = document.getElementById("headRow");
+			const body = document.getElementById("body");
+
+			// Build header row
+			headRow.appendChild(document.createElement("th")).textContent =
+				"Prompt";
+			for (const col of COLUMNS) {
+				const th = document.createElement("th");
+				th.textContent = col.label;
+				headRow.appendChild(th);
+			}
+
+			// Helpers
+			async function loadText(url) {
+				const res = await fetch(url);
+				if (!res.ok) throw new Error("Missing " + url);
+				return await res.text();
+			}
+			function makeVideo(src, id) {
+				const v = document.createElement("video");
+				v.controls = true;
+				v.preload = "metadata";
+				v.playsInline = true;
+				v.muted = true; // autoplay policies
+				v.src = src;
+				v.dataset.vid = id;
+				return v;
+			}
+
+			function queryRowVideos(rowId) {
+				return Array.from(
+					document.querySelectorAll(`video[data-vid^="${rowId}-"]`)
+				);
+			}
+			async function playAll(videos) {
+				for (const v of videos) {
+					try {
+						v.currentTime = 0;
+						await v.play();
+					} catch (e) {}
+				}
+			}
+			function pauseAll(videos) {
+				videos.forEach((v) => v.pause());
+			}
+			function resetAllVideos(videos) {
+				videos.forEach((v) => {
+					v.pause();
+					v.currentTime = 0;
+				});
+			}
+			function setAllMuted(m) {
+				document
+					.querySelectorAll("video")
+					.forEach((v) => (v.muted = m));
+			}
+
+			async function buildFromManifest() {
+				let manifest;
+				try {
+					const r = await fetch("assets/manifest.json");
+					manifest = await r.json();
+				} catch (e) {
+					body.innerHTML =
+						'<tr><td colspan="' +
+						(COLUMNS.length + 1) +
+						'">Missing <code>assets/manifest.json</code>. Create one as shown in the source comments.</td></tr>';
+					return;
+				}
+
+				for (let i = 0; i < manifest.prompts.length; i++) {
+					const p = manifest.prompts[i];
+					const id = typeof p === "string" ? p : p.id;
+					const title =
+						typeof p === "object" && p.title
+							? p.title
+							: "Prompt " + (i + 1);
+
+					const tr = document.createElement("tr");
+
+					const th = document.createElement("th");
+					th.innerHTML = `<div style="display:flex; align-items:flex-start; gap:10px">\
+        <div>\
+          <div><strong>${title}</strong></div>\
+          <div class=\"tag\">Row ${i + 1}</div>\
+          <div class=\"tag\" id=\"${id}-promptText\" style=\"max-width:260px; white-space:pre-wrap\"></div>\
+        </div>\
+        <div class=\"row-controls\">\
+          <button class=\"playRow\" data-row=\"${id}\">Play row (sync)</button>\
+          <button class=\"pauseRow\" data-row=\"${id}\">Pause row</button>\
+          <button class=\"resetRow\" data-row=\"${id}\">Reset row</button>\
+        </div>`;
+					tr.appendChild(th);
+
+					for (const col of COLUMNS) {
+						const td = document.createElement("td");
+						const container = document.createElement("div");
+						container.className = "cell";
+						const src = `assets/${id}/${col.key}.mp4`;
+						const v = makeVideo(src, `${id}-${col.key}`);
+						container.appendChild(v);
+						td.appendChild(container);
+						tr.appendChild(td);
+					}
+					body.appendChild(tr);
+
+					// load prompt text
+					loadText(`assets/${id}/prompt.txt`)
+						.then((t) => {
+							const el = document.getElementById(
+								`${id}-promptText`
+							);
+							if (el) el.textContent = t.trim();
+						})
+						.catch(() => {
+							const el = document.getElementById(
+								`${id}-promptText`
+							);
+							if (el) el.textContent = "(no prompt.txt)";
+						});
+				}
+
+				// Wire controls now that the rows exist
+				document.querySelectorAll(".playRow").forEach((btn) =>
+					btn.addEventListener("click", async (e) => {
+						await playAll(
+							queryRowVideos(e.currentTarget.dataset.row)
+						);
+					})
+				);
+				document.querySelectorAll(".pauseRow").forEach((btn) =>
+					btn.addEventListener("click", (e) => {
+						pauseAll(queryRowVideos(e.currentTarget.dataset.row));
+					})
+				);
+				document.querySelectorAll(".resetRow").forEach((btn) =>
+					btn.addEventListener("click", (e) => {
+						resetAllVideos(
+							queryRowVideos(e.currentTarget.dataset.row)
+						);
+					})
+				);
+
+				// Ended: pause siblings
+				document.querySelectorAll("video").forEach((v) => {
+					v.addEventListener("ended", () => {
+						const [rowId] = v.dataset.vid.split("-");
+						pauseAll(queryRowVideos(rowId));
+					});
+				});
+			}
+
+			// Global controls
+			document
+				.getElementById("muteAll")
+				.addEventListener("click", () => setAllMuted(true));
+			document
+				.getElementById("pauseAll")
+				.addEventListener("click", () =>
+					pauseAll(Array.from(document.querySelectorAll("video")))
+				);
+			document
+				.getElementById("resetAll")
+				.addEventListener("click", () =>
+					resetAllVideos(
+						Array.from(document.querySelectorAll("video"))
+					)
+				);
+
+			// Theme toggle
+			const root = document.documentElement;
+			const saved = localStorage.getItem("pv-theme");
+			if (saved) {
+				root.setAttribute("data-theme", saved);
+			}
+			document
+				.getElementById("toggleTheme")
+				.addEventListener("click", () => {
+					const cur = root.getAttribute("data-theme");
+					const next = cur === "light" ? "dark" : "light";
+					root.setAttribute("data-theme", next);
+					localStorage.setItem("pv-theme", next);
+				});
+
+			// Build page
+			buildFromManifest();
+		</script>
+	</body>
+</html>
