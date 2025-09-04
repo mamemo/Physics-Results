@@ -72,12 +72,17 @@
 				border: none;
 				background: var(--btn);
 				color: var(--btnText);
-				padding: 8px 12px;
-				border-radius: 12px;
-				font-weight: 600;
+				padding: 8px;
+				border-radius: 50%;
+				width: 44px;
+				height: 44px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
 				cursor: pointer;
 				box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
 				transition: 0.2s transform;
+				font-size: 18px;
 			}
 			button:hover {
 				transform: translateY(-1px);
@@ -86,7 +91,11 @@
 				background: transparent;
 				color: var(--muted);
 				border: 1px solid var(--grid);
-				box-shadow: none;
+				border-radius: 12px;
+				width: auto;
+				height: auto;
+				padding: 8px 12px;
+				font-size: 14px;
 			}
 			.grid {
 				overflow: auto;
@@ -96,6 +105,7 @@
 				width: max(800px, 100%);
 				border-collapse: separate;
 				border-spacing: 0;
+				table-layout: fixed;
 			}
 			thead th {
 				position: sticky;
@@ -124,11 +134,14 @@
 				text-align: left;
 				padding: 10px;
 				font-size: 14px;
+				vertical-align: top;
+				width: 260px;
 			}
 			td {
 				padding: 10px;
 				border-bottom: 1px solid var(--grid);
 				background: var(--card);
+				width: 260px;
 			}
 			.cell {
 				display: flex;
@@ -136,8 +149,7 @@
 				gap: 8px;
 			}
 			video {
-				width: 260px;
-				max-width: 26vw;
+				width: 100%;
 				height: 150px;
 				background: #000;
 				border-radius: 12px;
@@ -146,7 +158,10 @@
 			}
 			.row-controls {
 				display: flex;
-				gap: 8px;
+				gap: 12px;
+				flex-wrap: wrap;
+				margin-top: 12px;
+				justify-content: center;
 			}
 			.tag {
 				font-size: 12px;
@@ -164,32 +179,53 @@
 				padding: 18px;
 			}
 			@media (max-width: 900px) {
-				video {
+				td,
+				tbody th {
 					width: 220px;
+				}
+				video {
 					height: 124px;
 				}
 			}
 			@media (max-width: 700px) {
-				video {
+				td,
+				tbody th {
 					width: 180px;
+				}
+				video {
 					height: 102px;
 				}
 			}
 		</style>
+		<link
+			rel="stylesheet"
+			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+			integrity="sha512-SnH5WK+bZxgPHs44uWIX+2dvNhbbX6YsJhBKt3vnDnN/SUXOc6Bx/OVCkXbklaVK+FkB1hp5qC9fM6VQm8K4iw=="
+			crossorigin="anonymous"
+			referrerpolicy="no-referrer"
+		/>
 	</head>
 	<body>
 		<header>
 			<div class="wrap">
 				<h1>Prompt Video Matrix</h1>
 				<div class="sub">
-					Each folder under <code>assets/</code> is a prompt. Put
-					<code>prompt.txt</code> and the 5 videos inside. Play videos
-					independently or <strong>sync‑play</strong> a row.
+					Each folder in <code>assets/</code> is a prompt folder. It
+					must contain <code>prompt.txt</code> and the 5 videos
+					(<code>cogvideox.mp4</code>, <code>motion.mp4</code>,
+					<code>collisions.mp4</code>, <code>motion_desc.mp4</code>,
+					<code>collisions_desc.mp4</code>).
 				</div>
 				<div class="control-bar">
-					<button id="muteAll">Mute all</button>
-					<button id="pauseAll">Pause all</button>
-					<button id="resetAll">Reset all</button>
+					<button id="muteAll" title="Mute all">
+						<i class="fas fa-volume-mute"></i>
+					</button>
+					<button id="pauseAll" title="Pause all">
+						<i class="fas fa-pause"></i>
+					</button>
+					<button id="resetAll" title="Reset all">
+						<i class="fas fa-rotate-left"></i>
+					</button>
 					<span class="chip"
 						>Theme:
 						<button
@@ -212,22 +248,20 @@
 				<tbody id="body"></tbody>
 			</table>
 			<p class="note">
-				Folder layout per prompt (example <code>assets/p1/</code>):
-				<code>prompt.txt</code>, <code>cogvideox.mp4</code>,
-				<code>motion.mp4</code>, <code>collisions.mp4</code>,
-				<code>motion_desc.mp4</code>, <code>collisions_desc.mp4</code>.
-				List your prompt folders in <code>assets/manifest.json</code>.
+				The site automatically scans the <code>assets/</code> folder and
+				treats every subfolder as a prompt. Each folder should have
+				<code>prompt.txt</code> with text to show in the first column,
+				plus the five videos with fixed names.
 			</p>
 		</main>
 
 		<div class="footer">
-			Built for GitHub Pages. Uses <code>assets/manifest.json</code> + one
-			<code>prompt.txt</code> per folder.
+			Built for GitHub Pages. No manifest.json needed — just folders in
+			<code>assets/</code>.
 		</div>
 
+		<script src="assets/prompts.js"></script>
 		<script>
-			// ======= CONFIG VIA MANIFEST =======
-			// Columns (fixed filenames per column)
 			const COLUMNS = [
 				{ key: "cogvideox", label: "CogVideoX" },
 				{ key: "motion", label: "Motion‑only" },
@@ -235,23 +269,13 @@
 				{ key: "motion_desc", label: "Motion‑only (descriptive)" },
 				{
 					key: "collisions_desc",
-					label: "Collisions (descriptive)",
+					label: "Collisions (text‑descriptive)",
 				},
 			];
-			// The page loads assets/manifest.json with this minimal shape:
-			// {
-			//   "prompts": [
-			//     {"id":"p1", "title":"Imagen prompt #1"},
-			//     {"id":"p2", "title":"Imagen prompt #2"}
-			//   ]
-			// }
-			// Each folder assets/<id>/ must contain prompt.txt and the .mp4s named by COLUMNS' keys.
-			// ===================================
 
 			const headRow = document.getElementById("headRow");
 			const body = document.getElementById("body");
 
-			// Build header row
 			headRow.appendChild(document.createElement("th")).textContent =
 				"Prompt";
 			for (const col of COLUMNS) {
@@ -260,18 +284,18 @@
 				headRow.appendChild(th);
 			}
 
-			// Helpers
 			async function loadText(url) {
 				const res = await fetch(url);
 				if (!res.ok) throw new Error("Missing " + url);
 				return await res.text();
 			}
+
 			function makeVideo(src, id) {
 				const v = document.createElement("video");
 				v.controls = true;
 				v.preload = "metadata";
 				v.playsInline = true;
-				v.muted = true; // autoplay policies
+				v.muted = true;
 				v.src = src;
 				v.dataset.vid = id;
 				return v;
@@ -282,6 +306,7 @@
 					document.querySelectorAll(`video[data-vid^="${rowId}-"]`)
 				);
 			}
+
 			async function playAll(videos) {
 				for (const v of videos) {
 					try {
@@ -305,41 +330,30 @@
 					.forEach((v) => (v.muted = m));
 			}
 
-			async function buildFromManifest() {
-				let manifest;
-				try {
-					const r = await fetch("assets/manifest.json");
-					manifest = await r.json();
-				} catch (e) {
-					body.innerHTML =
-						'<tr><td colspan="' +
-						(COLUMNS.length + 1) +
-						'">Missing <code>assets/manifest.json</code>. Create one as shown in the source comments.</td></tr>';
-					return;
-				}
+			async function buildFromAssets() {
+				let promptFolders = window.promptFolders || [];
+				if (!promptFolders.length)
+					promptFolders = [
+						/* "p1","p2" */
+					];
 
-				for (let i = 0; i < manifest.prompts.length; i++) {
-					const p = manifest.prompts[i];
-					const id = typeof p === "string" ? p : p.id;
-					const title =
-						typeof p === "object" && p.title
-							? p.title
-							: "Prompt " + (i + 1);
+				for (let i = 0; i < promptFolders.length; i++) {
+					const id = promptFolders[i];
+					const title = `Prompt ${i + 1}`;
 
 					const tr = document.createElement("tr");
 
 					const th = document.createElement("th");
-					th.innerHTML = `<div style="display:flex; align-items:flex-start; gap:10px">\
-        <div>\
-          <div><strong>${title}</strong></div>\
-          <div class=\"tag\">Row ${i + 1}</div>\
-          <div class=\"tag\" id=\"${id}-promptText\" style=\"max-width:260px; white-space:pre-wrap\"></div>\
-        </div>\
+					th.innerHTML = `<div>\
+        <div><strong>${title}</strong></div>\
+        <div class=\"tag\">Row ${i + 1}</div>\
+        <div class=\"tag\" id=\"${id}-promptText\" style=\"white-space:pre-wrap\"></div>\
         <div class=\"row-controls\">\
-          <button class=\"playRow\" data-row=\"${id}\">Play row (sync)</button>\
-          <button class=\"pauseRow\" data-row=\"${id}\">Pause row</button>\
-          <button class=\"resetRow\" data-row=\"${id}\">Reset row</button>\
-        </div>`;
+          <button class=\"playRow\" data-row=\"${id}\" title=\"Play row (sync)\"><i class=\"fa-solid fa-play\"></i></button>\
+          <button class=\"pauseRow\" data-row=\"${id}\" title=\"Pause row\"><i class=\"fas fa-pause\"></i></button>\
+          <button class=\"resetRow\" data-row=\"${id}\" title=\"Reset row\"><i class=\"fas fa-rotate-left\"></i></button>\
+        </div>\
+      </div>`;
 					tr.appendChild(th);
 
 					for (const col of COLUMNS) {
@@ -354,7 +368,6 @@
 					}
 					body.appendChild(tr);
 
-					// load prompt text
 					loadText(`assets/${id}/prompt.txt`)
 						.then((t) => {
 							const el = document.getElementById(
@@ -370,7 +383,6 @@
 						});
 				}
 
-				// Wire controls now that the rows exist
 				document.querySelectorAll(".playRow").forEach((btn) =>
 					btn.addEventListener("click", async (e) => {
 						await playAll(
@@ -391,7 +403,6 @@
 					})
 				);
 
-				// Ended: pause siblings
 				document.querySelectorAll("video").forEach((v) => {
 					v.addEventListener("ended", () => {
 						const [rowId] = v.dataset.vid.split("-");
@@ -400,7 +411,6 @@
 				});
 			}
 
-			// Global controls
 			document
 				.getElementById("muteAll")
 				.addEventListener("click", () => setAllMuted(true));
@@ -417,7 +427,6 @@
 					)
 				);
 
-			// Theme toggle
 			const root = document.documentElement;
 			const saved = localStorage.getItem("pv-theme");
 			if (saved) {
@@ -432,8 +441,7 @@
 					localStorage.setItem("pv-theme", next);
 				});
 
-			// Build page
-			buildFromManifest();
+			buildFromAssets();
 		</script>
 	</body>
 </html>
